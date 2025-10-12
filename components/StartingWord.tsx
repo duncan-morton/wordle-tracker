@@ -77,7 +77,7 @@ export default function StartingWord({ onWordSet }: { onWordSet?: () => void }) 
       <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 text-center">
         <div className="flex items-center justify-center gap-2 mb-3">
           <span className="text-2xl">💡</span>
-          <h2 className="text-2xl font-bold text-white">This Week's Starting Word</h2>
+          <h2 className="text-2xl font-bold text-white">This Week&apos;s Starting Word</h2>
         </div>
         {currentWord ? (
           <>
