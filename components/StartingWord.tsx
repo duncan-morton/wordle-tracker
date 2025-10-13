@@ -11,12 +11,14 @@ interface StartingWordData {
 
 export default function StartingWord({ onWordSet }: { onWordSet?: () => void }) {
   const [currentWord, setCurrentWord] = useState<StartingWordData | null>(null);
+  const [history, setHistory] = useState<StartingWordData[]>([]);
   const [newWord, setNewWord] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     fetchCurrentWord();
+    fetchHistory();
   }, []);
 
   const fetchCurrentWord = async () => {
@@ -26,6 +28,16 @@ export default function StartingWord({ onWordSet }: { onWordSet?: () => void }) 
       setCurrentWord(data);
     } catch (error) {
       console.error('Error fetching starting word:', error);
+    }
+  };
+
+  const fetchHistory = async () => {
+    try {
+      const res = await fetch('/api/starting-words/history');
+      const data = await res.json();
+      setHistory(data);
+    } catch (error) {
+      console.error('Error fetching history:', error);
     }
   };
 
@@ -60,6 +72,7 @@ export default function StartingWord({ onWordSet }: { onWordSet?: () => void }) 
         setMessage({ type: 'success', text: 'Starting word set successfully!' });
         setNewWord('');
         fetchCurrentWord();
+        fetchHistory();
         if (onWordSet) onWordSet();
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to set starting word' });
@@ -68,6 +81,23 @@ export default function StartingWord({ onWordSet }: { onWordSet?: () => void }) 
       setMessage({ type: 'error', text: 'Something went wrong' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      // Handle both YYYY-MM-DD and ISO timestamp formats
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Date N/A';
+      }
+      return date.toLocaleDateString('en-GB', { 
+        day: 'numeric', 
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch {
+      return 'Date N/A';
     }
   };
 
@@ -132,6 +162,29 @@ export default function StartingWord({ onWordSet }: { onWordSet?: () => void }) 
             {loading ? 'Setting...' : 'Set Starting Word'}
           </button>
         </form>
+      </div>
+
+      {/* History */}
+      <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <h3 className="text-xl font-bold text-white mb-4">📜 Previous Starting Words</h3>
+        
+        {history.length > 0 ? (
+          <div className="space-y-2">
+            {history.map((item) => (
+              <div key={item.id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                <div>
+                  <span className="text-lg font-bold text-white tracking-wider">{item.word}</span>
+                  <span className="text-sm text-gray-400 ml-3">by {item.chosen_by_name}</span>
+                </div>
+                <span className="text-sm text-gray-500">
+                  {formatDate(item.week_start)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-400 text-center py-4">No previous words yet</p>
+        )}
       </div>
     </div>
   );
