@@ -26,7 +26,35 @@ export async function GET() {
       ORDER BY avg_score ASC, games_played DESC
     `;
 
-    return NextResponse.json(result.rows);
+    // Calculate best weekly score for each player
+    const weeklyScores = await sql`
+      WITH weekly_totals AS (
+        SELECT 
+          u.id as user_id,
+          u.username,
+          DATE_TRUNC('week', s.date) as week_start,
+          SUM(s.score) as week_total
+        FROM users u
+        JOIN scores s ON u.id = s.user_id
+        GROUP BY u.id, u.username, DATE_TRUNC('week', s.date)
+      )
+      SELECT 
+        username,
+        MIN(week_total) as best_weekly_score
+      FROM weekly_totals
+      GROUP BY username
+    `;
+
+    // Merge the data
+    const stats = result.rows.map(row => {
+      const weeklyData = weeklyScores.rows.find(w => w.username === row.username);
+      return {
+        ...row,
+        best_weekly_score: weeklyData?.best_weekly_score || null
+      };
+    });
+
+    return NextResponse.json(stats);
   } catch (error) {
     console.error('Error fetching stats:', error);
     return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });

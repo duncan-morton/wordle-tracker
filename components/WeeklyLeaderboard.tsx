@@ -24,6 +24,7 @@ export default function WeeklyLeaderboard({ refresh }: { refresh?: number }) {
   const [leaderboard, setLeaderboard] = useState<PlayerWeekScore[]>([]);
   const [loading, setLoading] = useState(true);
   const [weekDays, setWeekDays] = useState<string[]>([]);
+  const [isWeekComplete, setIsWeekComplete] = useState(false);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -44,7 +45,6 @@ export default function WeeklyLeaderboard({ refresh }: { refresh?: number }) {
       for (let i = 0; i < 7; i++) {
         const day = new Date(start);
         day.setDate(start.getDate() + i);
-        // Format as YYYY-MM-DD in local timezone
         const year = day.getFullYear();
         const month = String(day.getMonth() + 1).padStart(2, '0');
         const date = String(day.getDate()).padStart(2, '0');
@@ -52,6 +52,12 @@ export default function WeeklyLeaderboard({ refresh }: { refresh?: number }) {
         days.push(dateStr);
       }
       setWeekDays(days);
+
+      // Check if week is complete (is today Saturday or later?)
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const lastDayOfWeek = days[6]; // Saturday
+      setIsWeekComplete(todayStr > lastDayOfWeek);
 
       // Group scores by player
       const playerMap: { [key: string]: PlayerWeekScore } = {};
@@ -65,10 +71,8 @@ export default function WeeklyLeaderboard({ refresh }: { refresh?: number }) {
             total: 0,
           };
         }
-        // Normalize the date to YYYY-MM-DD format
         let scoreDate: string;
         if (score.date.includes('T')) {
-          // Extract date part if timestamp included
           scoreDate = score.date.split('T')[0];
         } else {
           scoreDate = score.date;
@@ -77,7 +81,6 @@ export default function WeeklyLeaderboard({ refresh }: { refresh?: number }) {
         playerMap[score.username].total += score.score;
       });
 
-      // Convert to array and sort by total (lowest first)
       const leaderboardArray = Object.values(playerMap).sort((a, b) => a.total - b.total);
       setLeaderboard(leaderboardArray);
     } catch (error) {
@@ -104,54 +107,68 @@ export default function WeeklyLeaderboard({ refresh }: { refresh?: number }) {
     return <div className="text-white">Loading leaderboard...</div>;
   }
 
-  return (
-    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-      <h2 className="text-2xl font-bold text-white mb-4">
-        Weekly Leaderboard - Week of {weekDays[0] ? new Date(weekDays[0] + 'T12:00:00').toLocaleDateString('en-GB') : ''}
-      </h2>
+  const winner = leaderboard[0];
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-gray-700">
-              <th className="px-4 py-3 text-gray-300 font-medium">Rank</th>
-              <th className="px-4 py-3 text-gray-300 font-medium">Player</th>
-              {weekDays.map((day) => (
-                <th key={day} className="px-2 py-3 text-center text-gray-300 font-medium text-sm">
-                  {getDayName(day)}
-                </th>
-              ))}
-              <th className="px-4 py-3 text-center text-gray-300 font-medium">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {leaderboard.map((player, index) => (
-              <tr key={player.username} className="border-b border-gray-700 hover:bg-gray-750">
-                <td className="px-4 py-3 text-white font-medium">
-                  {index === 0 && '🏆'} {index + 1}
-                </td>
-                <td className="px-4 py-3 text-white font-medium">{player.displayName}</td>
+  return (
+    <div className="space-y-4">
+
+      {/* Leaderboard Table */}
+      <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <h2 className="text-2xl font-bold text-white mb-4">
+          Weekly Leaderboard - Week of {weekDays[0] ? new Date(weekDays[0] + 'T12:00:00').toLocaleDateString('en-GB') : ''}
+        </h2>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-700">
+                <th className="px-4 py-3 text-gray-300 font-medium">Rank</th>
+                <th className="px-4 py-3 text-gray-300 font-medium">Player</th>
                 {weekDays.map((day) => (
-                  <td key={day} className="px-2 py-3 text-center">
-                    <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getScoreColor(player.scores[day])}`}>
-                      {player.scores[day] || '-'}
+                  <th key={day} className="px-2 py-3 text-center text-gray-300 font-medium text-sm">
+                    {getDayName(day)}
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-center text-gray-300 font-medium">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leaderboard.map((player, index) => (
+                <tr key={player.username} className="border-b border-gray-700 hover:bg-gray-750">
+                  <td className="px-4 py-3 text-white font-medium">
+                    {index === 0 && '🏆'} 
+                    {index === 1 && '🥈'}
+                    {index === 2 && '🥉'}
+                    {' '}{index + 1}
+                  </td>
+                  <td className="px-4 py-3 text-white font-medium">{player.displayName}</td>
+                  {weekDays.map((day) => (
+                    <td key={day} className="px-2 py-3 text-center">
+                      <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${getScoreColor(player.scores[day])}`}>
+                        {player.scores[day] || '-'}
+                      </span>
+                    </td>
+                  ))}
+                  <td className="px-4 py-3 text-center">
+                    <span className={`inline-block px-4 py-1 rounded font-bold ${
+                      index === 0 ? 'bg-yellow-500 text-white' :
+                      index === 1 ? 'bg-gray-400 text-white' :
+                      index === 2 ? 'bg-orange-600 text-white' :
+                      'bg-green-600 text-white'
+                    }`}>
+                      {player.total}
                     </span>
                   </td>
-                ))}
-                <td className="px-4 py-3 text-center">
-                  <span className="inline-block px-4 py-1 bg-green-600 text-white rounded font-bold">
-                    {player.total}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-      {leaderboard.length === 0 && (
-        <p className="text-gray-400 text-center py-8">No scores yet this week. Be the first to add one!</p>
-      )}
+        {leaderboard.length === 0 && (
+          <p className="text-gray-400 text-center py-8">No scores yet this week. Be the first to add one!</p>
+        )}
+      </div>
     </div>
   );
 }

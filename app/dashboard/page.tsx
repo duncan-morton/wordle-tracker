@@ -1,33 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import ScoreEntry from '@/components/ScoreEntry';
 import WeeklyLeaderboard from '@/components/WeeklyLeaderboard';
 import AllTimeStats from '@/components/AllTimeStats';
 import StartingWord from '@/components/StartingWord';
+import WeeklyPodium from '@/components/WeeklyPodium';
 
-type Tab = 'weekly' | 'all-time' | 'starting-word';
+type Tab = 'weekly' | 'all-time' | 'podium' | 'starting-word';
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<Tab>('weekly');
   const [refreshKey, setRefreshKey] = useState(0);
-  const [currentUser, setCurrentUser] = useState<string>('');
-
-  useEffect(() => {
-    fetchCurrentUser();
-  }, []);
-
-  const fetchCurrentUser = async () => {
-    try {
-      const res = await fetch('/api/auth/me');
-      const data = await res.json();
-      if (data.displayName) {
-        setCurrentUser(data.displayName);
-      }
-    } catch (error) {
-      console.error('Error fetching user:', error);
-    }
-  };
 
   const handleScoreSubmitted = () => {
     setRefreshKey(prev => prev + 1);
@@ -46,14 +30,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-sm text-gray-400">
-              {currentUser && (
-                <>
-                  Logged in as <span className="text-green-500 font-medium">{currentUser}</span>
-                </>
-              )}
-            </div>
+          <div className="flex justify-end mb-4">
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition text-sm"
@@ -92,6 +69,16 @@ export default function DashboardPage() {
             All-Time
           </button>
           <button
+            onClick={() => setActiveTab('podium')}
+            className={`px-6 py-3 font-medium transition ${
+              activeTab === 'podium'
+                ? 'text-white border-b-2 border-green-500'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Podium
+          </button>
+          <button
             onClick={() => setActiveTab('starting-word')}
             className={`px-6 py-3 font-medium transition ${
               activeTab === 'starting-word'
@@ -118,6 +105,12 @@ export default function DashboardPage() {
         {activeTab === 'all-time' && (
           <div>
             <AllTimeStats />
+          </div>
+        )}
+
+        {activeTab === 'podium' && (
+          <div>
+            <WeeklyPodium />
           </div>
         )}
 
