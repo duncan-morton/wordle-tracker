@@ -26,23 +26,27 @@ export async function GET() {
       ORDER BY avg_score ASC, games_played DESC
     `;
 
-    // Calculate best weekly score for each player
+    // Calculate best weekly score for each player using Sunday-based weeks
     const weeklyScores = await sql`
       WITH weekly_totals AS (
         SELECT 
           u.id as user_id,
           u.username,
-          DATE_TRUNC('week', s.date) as week_start,
-          SUM(s.score) as week_total
+          u.display_name,
+          DATE_TRUNC('week', s.date::date + INTERVAL '1 day')::date - INTERVAL '1 day' as week_start,
+          SUM(s.score) as week_total,
+          COUNT(*) as games_in_week
         FROM users u
         JOIN scores s ON u.id = s.user_id
-        GROUP BY u.id, u.username, DATE_TRUNC('week', s.date)
+        GROUP BY u.id, u.username, u.display_name, DATE_TRUNC('week', s.date::date + INTERVAL '1 day')::date
+        HAVING COUNT(*) >= 5
       )
       SELECT 
         username,
+        display_name,
         MIN(week_total) as best_weekly_score
       FROM weekly_totals
-      GROUP BY username
+      GROUP BY username, display_name
     `;
 
     // Merge the data

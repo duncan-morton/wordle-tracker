@@ -24,27 +24,34 @@ export default function WeeklyLeaderboard({ refresh }: { refresh?: number }) {
   const [leaderboard, setLeaderboard] = useState<PlayerWeekScore[]>([]);
   const [loading, setLoading] = useState(true);
   const [weekDays, setWeekDays] = useState<string[]>([]);
-  const [isWeekComplete, setIsWeekComplete] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, -1 = last week, etc.
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [refresh]);
+  }, [refresh, weekOffset]);
 
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
       const { start, end } = getCurrentWeekBounds();
-      // Format dates in local timezone to avoid UTC conversion issues
-const formatLocalDate = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
 
-const weekStart = formatLocalDate(start);
-const weekEnd = formatLocalDate(end);
-      console.log('Week bounds:', { weekStart, weekEnd, start, end });
+      // Apply week offset
+      const adjustedStart = new Date(start);
+      adjustedStart.setDate(start.getDate() + (weekOffset * 7));
+
+      const adjustedEnd = new Date(end);
+      adjustedEnd.setDate(end.getDate() + (weekOffset * 7));
+
+      // Format dates in local timezone
+      const formatLocalDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const weekStart = formatLocalDate(adjustedStart);
+      const weekEnd = formatLocalDate(adjustedEnd);
 
       const res = await fetch(`/api/scores?weekStart=${weekStart}&weekEnd=${weekEnd}`);
       const scores: Score[] = await res.json();
@@ -52,8 +59,8 @@ const weekEnd = formatLocalDate(end);
       // Generate days of the week starting from Sunday
       const days: string[] = [];
       for (let i = 0; i < 7; i++) {
-        const day = new Date(start);
-        day.setDate(start.getDate() + i);
+        const day = new Date(adjustedStart);
+        day.setDate(adjustedStart.getDate() + i);
         const year = day.getFullYear();
         const month = String(day.getMonth() + 1).padStart(2, '0');
         const date = String(day.getDate()).padStart(2, '0');
@@ -61,12 +68,6 @@ const weekEnd = formatLocalDate(end);
         days.push(dateStr);
       }
       setWeekDays(days);
-
-      // Check if week is complete (is today Saturday or later?)
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
-      const lastDayOfWeek = days[6]; // Saturday
-      setIsWeekComplete(todayStr > lastDayOfWeek);
 
       // Group scores by player
       const playerMap: { [key: string]: PlayerWeekScore } = {};
@@ -112,20 +113,78 @@ const weekEnd = formatLocalDate(end);
     return days[date.getDay()];
   };
 
+  const goToPreviousWeek = () => {
+    setWeekOffset(prev => prev - 1);
+  };
+
+  const goToNextWeek = () => {
+    setWeekOffset(prev => prev + 1);
+  };
+
+  const goToCurrentWeek = () => {
+    setWeekOffset(0);
+  };
+
   if (loading) {
     return <div className="text-white">Loading leaderboard...</div>;
   }
 
-  const winner = leaderboard[0];
-
   return (
     <div className="space-y-4">
-
       {/* Leaderboard Table */}
       <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-        <h2 className="text-2xl font-bold text-white mb-4">
-          Weekly Leaderboard - Week of {weekDays[0] ? new Date(weekDays[0] + 'T12:00:00').toLocaleDateString('en-GB') : ''}
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-white">
+            Weekly Leaderboard
+          </h2>
+          
+          {/* Week Navigation */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={goToPreviousWeek}
+              className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded transition"
+              title="Previous week"
+            >
+              ← Prev
+            </button>
+            
+            <div className="text-center">
+              <div className="text-sm text-gray-400">
+                {weekOffset === 0 ? 'Current Week' : `${Math.abs(weekOffset)} week${Math.abs(weekOffset) > 1 ? 's' : ''} ago`}
+              </div>
+              <div className="text-sm text-white font-medium">
+                {weekDays[0] ? new Date(weekDays[0] + 'T12:00:00').toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short'
+                }) : ''} - {weekDays[6] ? new Date(weekDays[6] + 'T12:00:00').toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric'
+                }) : ''}
+              </div>
+            </div>
+
+            <button
+              onClick={goToNextWeek}
+              disabled={weekOffset === 0}
+              className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Next week"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+
+        {weekOffset !== 0 && (
+          <div className="mb-4">
+            <button
+              onClick={goToCurrentWeek}
+              className="text-sm text-green-500 hover:text-green-400 underline"
+            >
+              ← Back to Current Week
+            </button>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -175,7 +234,7 @@ const weekEnd = formatLocalDate(end);
         </div>
 
         {leaderboard.length === 0 && (
-          <p className="text-gray-400 text-center py-8">No scores yet this week. Be the first to add one!</p>
+          <p className="text-gray-400 text-center py-8">No scores for this week</p>
         )}
       </div>
     </div>
