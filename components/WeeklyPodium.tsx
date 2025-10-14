@@ -42,6 +42,13 @@ export default function WeeklyPodium() {
       const res = await fetch(`/api/scores?weekStart=${weekStartStr}&weekEnd=${weekEndStr}`);
       const scores: Score[] = await res.json();
 
+      // Fetch starting word
+      const wordRes = await fetch('/api/starting-words');
+      const wordData = await wordRes.json();
+      if (wordData && wordData.word) {
+        setStartingWord(wordData.word);
+      }
+
       // Group scores by player
       const playerMap: { [key: string]: { displayName: string; total: number } } = {};
       
@@ -54,13 +61,6 @@ export default function WeeklyPodium() {
         }
         playerMap[score.username].total += score.score;
       });
-
-      // Fetch starting word
-const wordRes = await fetch('/api/starting-words');
-const wordData = await wordRes.json();
-if (wordData && wordData.word) {
-  setStartingWord(wordData.word);
-}
 
       const leaderboardArray = Object.keys(playerMap)
         .map((username) => ({
@@ -132,15 +132,15 @@ if (wordData && wordData.word) {
             🏆 Wordle Nerdles 🤓
           </h2>
           {startingWord ? (
-  <div>
-    <p className="text-sm text-gray-500 mb-1">Starting Word</p>
-    <p className="text-2xl font-bold text-green-500 tracking-wider">{startingWord}</p>
-  </div>
-) : (
-  <p className="text-gray-400">
-    Week of {weekStart ? new Date(weekStart + 'T12:00:00').toLocaleDateString('en-GB') : ''}
-  </p>
-)}
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Starting Word</p>
+              <p className="text-2xl font-bold text-green-500 tracking-wider">{startingWord}</p>
+            </div>
+          ) : (
+            <p className="text-gray-400">
+              Week of {weekStart ? new Date(weekStart + 'T12:00:00').toLocaleDateString('en-GB') : ''}
+            </p>
+          )}
         </div>
 
         {top3.length >= 3 ? (

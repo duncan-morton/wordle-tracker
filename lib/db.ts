@@ -14,11 +14,14 @@ export function getCurrentWordleNumber(): number {
 // Helper to get week bounds (Sunday to Saturday)
 export function getCurrentWeekBounds(): { start: Date; end: Date } {
   const today = new Date();
-  const day = today.getDay();
+  const day = today.getDay(); // 0 = Sunday, 6 = Saturday
+  
+  // Calculate days to subtract to get to Sunday
   const start = new Date(today);
   start.setDate(today.getDate() - day);
   start.setHours(0, 0, 0, 0);
   
+  // End is 6 days after start (Saturday)
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
   end.setHours(23, 59, 59, 999);
