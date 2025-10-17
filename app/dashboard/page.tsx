@@ -13,6 +13,8 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<Tab>('weekly');
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentUser, setCurrentUser] = useState<string>('');
+  const [currentUsername, setCurrentUsername] = useState<string>('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -24,6 +26,8 @@ export default function DashboardPage() {
       const data = await res.json();
       if (data.displayName) {
         setCurrentUser(data.displayName);
+        setCurrentUsername(data.username);
+        setIsAdmin(data.username === 'duncan');
       }
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -43,6 +47,41 @@ export default function DashboardPage() {
     }
   };
 
+  // Non-admin view: Just score entry
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
+        <div className="max-w-md mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div className="text-sm text-gray-400">
+              {currentUser && (
+                <>
+                  Logged in as <span className="text-green-500 font-medium">{currentUser}</span>
+                </>
+              )}
+            </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition text-sm"
+            >
+              Logout
+            </button>
+          </div>
+
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-2">
+              🏆 Wordle Nerdles 🤓
+            </h1>
+            <p className="text-gray-400">Submit your daily score</p>
+          </div>
+
+          <ScoreEntry onScoreSubmitted={handleScoreSubmitted} />
+        </div>
+      </div>
+    );
+  }
+
+  // Admin view: Everything
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -52,6 +91,7 @@ export default function DashboardPage() {
               {currentUser && (
                 <>
                   Logged in as <span className="text-green-500 font-medium">{currentUser}</span>
+                  <span className="ml-2 px-2 py-1 bg-yellow-600 text-white text-xs rounded">ADMIN</span>
                 </>
               )}
             </div>
