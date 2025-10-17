@@ -115,22 +115,16 @@ export default function WeeklyPodium() {
     if (!podiumRef.current) return;
 
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(podiumRef.current, {
-        backgroundColor: '#1f2937',
-        scale: 2,
+      const htmlToImage = await import('html-to-image');
+      const dataUrl = await htmlToImage.toPng(podiumRef.current, {
+        backgroundColor: '#111827',
+        pixelRatio: 2,
       });
-
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `wordle-podium-${weekStart}.png`;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-      });
+      
+      const link = document.createElement('a');
+      link.download = `wordle-podium-${weekStart}.png`;
+      link.href = dataUrl;
+      link.click();
     } catch (error) {
       console.error('Error generating image:', error);
     }
@@ -140,22 +134,16 @@ export default function WeeklyPodium() {
     if (!barChartRef.current) return;
 
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(barChartRef.current, {
-        backgroundColor: '#1f2937',
-        scale: 2,
+      const htmlToImage = await import('html-to-image');
+      const dataUrl = await htmlToImage.toPng(barChartRef.current, {
+        backgroundColor: '#111827',
+        pixelRatio: 2,
       });
-
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `wordle-progress-${weekStart}.png`;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-      });
+      
+      const link = document.createElement('a');
+      link.download = `wordle-progress-${weekStart}.png`;
+      link.href = dataUrl;
+      link.click();
     } catch (error) {
       console.error('Error generating image:', error);
     }
@@ -165,22 +153,16 @@ export default function WeeklyPodium() {
     if (!tableRef.current) return;
 
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(tableRef.current, {
-        backgroundColor: '#1f2937',
-        scale: 2,
+      const htmlToImage = await import('html-to-image');
+      const dataUrl = await htmlToImage.toPng(tableRef.current, {
+        backgroundColor: '#111827',
+        pixelRatio: 2,
       });
-
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `wordle-results-${weekStart}.png`;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-      });
+      
+      const link = document.createElement('a');
+      link.download = `wordle-results-${weekStart}.png`;
+      link.href = dataUrl;
+      link.click();
     } catch (error) {
       console.error('Error generating image:', error);
     }
@@ -355,17 +337,17 @@ export default function WeeklyPodium() {
           </button>
         </div>
 
-        <div ref={tableRef} className="bg-gray-900 rounded-lg p-6">
-          <div className="text-center mb-4">
-            <h2 className="text-2xl font-bold text-white mb-1">
-              🏆 Wordle Nerdles 🤓
-            </h2>
-            {startingWord && (
-              <p className="text-sm text-green-500">Starting Word: {startingWord}</p>
-            )}
-          </div>
+        <div className="bg-gray-900 rounded-lg p-6">
+          <div ref={tableRef}>
+            <div className="text-center mb-4">
+              <h2 className="text-2xl font-bold text-white mb-1">
+                🏆 Wordle Nerdles 🤓
+              </h2>
+              {startingWord && (
+                <p className="text-sm text-green-500">Starting Word: {startingWord}</p>
+              )}
+            </div>
 
-          <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-gray-700">
